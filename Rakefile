@@ -1,6 +1,6 @@
 require "rake/testtask" 
 require 'rubygems/package_task'
-load 'minus5_daemons.gemspec'
+load 'minus5_daemon.gemspec'
 
 task :default => [:test] 
 
