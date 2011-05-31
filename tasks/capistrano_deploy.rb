@@ -4,12 +4,12 @@ Capistrano::Configuration.instance(:must_exist).load do
   namespace :deploy do
     desc "Restarting daemon"
     task :restart do
-      run "#{current_path}/bin/#{application}.rb restart"
+      run "#{current_path}/lib/#{application}.rb restart"
     end
 
     desc "Stopping daemon"
     task :stop do
-      run "#{current_path}/bin/#{application}.rb stop"
+      run "#{current_path}/lib/#{application}.rb stop"
     end
   end
 

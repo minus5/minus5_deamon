@@ -3,9 +3,9 @@ require 'fileutils'
 require 'optparse'
 require 'logger'
 require 'ostruct'
+require 'yaml'
 #gems
 require 'rubygems'
-require 'active_support/core_ext'
 
 gem 'daemons', '= 1.1.3'
 require 'daemons'

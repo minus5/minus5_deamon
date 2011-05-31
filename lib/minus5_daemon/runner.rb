@@ -1,14 +1,19 @@
 module Minus5
   module Daemon
+
+    def self.run(klass)
+      Runner.new(klass).run
+    rescue => e
+      print "#{e}\n"
+    end
+
+
     class Runner
 
-      def self.run()
-        Runner.new.run
-      end
-
-      def initialize
+      def initialize(klass = nil)
+        @klass = klass
+        # asserts
         init_logger
-        require_service_file
         @options = OpenStruct.new(
           :daemonize => true,
           :config_file => 'config.yml',
@@ -27,22 +32,8 @@ module Minus5
         Daemons.run_proc(@options.app_name, daemon_options) do
           logger.info "starting daemon pid: #{Process.pid}"
           logger.debug "options: #{@options}"
-          service = service_class.new(@options, @logger)
+          service = @klass.new(@options, @logger)
           service.run
-          # if service.respond_to?(:run)
-          #   service.run
-          # else
-          #   service.on_start
-          #   Signal.trap("TERM") do
-          #     logger.debug "TERM signal received"
-          #     service.active = false
-          #     service.on_stop
-          #   end
-          #   while service.active?
-          #     service.run_loop
-          #     sleep(1)
-          #   end
-          # end
         end
       end
 
@@ -68,10 +59,6 @@ module Minus5
         @logger.formatter = proc { |severity, datetime, progname, msg|
           "#{datetime.strftime("%Y-%m-%d %H:%M:%S")} #{severity}: #{msg}\n"
         }
-      end
-
-      def service_class
-        eval(start_script_name.split(".")[0].camelize)
       end
 
       def parse_arg_options
@@ -126,11 +113,10 @@ module Minus5
       end
 
       def app_root
-        File.expand_path(File.dirname($0) + "/../")
-      end
-
-      def require_service_file
-        require "#{app_root}/lib/#{start_script_name}"
+        start_dir = File.expand_path(File.dirname($0))
+        root_rel = ""
+        root_rel = ".." if start_dir.end_with?("/lib") || start_dir.end_with?("/bin")
+        File.expand_path(File.join(File.dirname($0), root_rel))
       end
 
     end

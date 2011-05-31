@@ -13,7 +13,7 @@ module Minus5
 
       def run
         EventMachine.run do
-          em_run
+          self.em_run
           logger.debug "em - server started"
           Signal.trap("TERM") do
             logger.debug "em - TERM signal received"
