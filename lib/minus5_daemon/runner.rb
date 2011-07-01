@@ -14,7 +14,7 @@ module Minus5
         @klass = klass
         # asserts
         init_logger
-        @options = OpenStruct.new(
+        @options = Hashie::Mash.new(
           :daemonize => true,
           :config_file => 'config.yml',
           :config_file_set => false,
@@ -42,7 +42,7 @@ module Minus5
       def load_config
         config_file = "#{@options.app_root}/config/#{@options.config_file}"
         if File.exists?(config_file)
-          @options.config = YAML.load_file config_file
+          @options.config = Hashie::Mash.new(YAML.load_file(config_file))
         else
           if @options.config_file_set
             msg = "config file #{config_file} not found"

@@ -9,6 +9,7 @@ require 'rubygems'
 
 gem 'daemons', '= 1.1.3'
 require 'daemons'
+require 'hashie'
 
 $LOAD_PATH.unshift "#{File.dirname(__FILE__)}/minus5_daemon/"
 require 'runner.rb'
