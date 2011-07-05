@@ -10,19 +10,19 @@ module Minus5
 
     class Runner
 
-      def initialize(klass = nil)
+      def initialize(klass)
         @klass = klass
-        # asserts
         init_logger
+        @config_file_set = false
         @options = Hashie::Mash.new(
           :daemonize => true,
           :config_file => 'config.yml',
-          :config_file_set => false,
           :environment => 'production',
           :app_name => start_script_name,
           :app_root => app_root)
         parse_arg_options
         load_config
+        load_environment_file
       end
 
       attr_reader :logger
@@ -39,12 +39,19 @@ module Minus5
 
       private
 
+      def load_environment_file
+        file = "#{@options.app_root}/config/#{@options.environment}.yml"
+        if File.exists?(file)
+          @options.merge!(YAML.load_file(file))
+        end
+      end
+
       def load_config
         config_file = "#{@options.app_root}/config/#{@options.config_file}"
         if File.exists?(config_file)
           @options.config = Hashie::Mash.new(YAML.load_file(config_file))
         else
-          if @options.config_file_set
+          if @config_file_set
             msg = "config file #{config_file} not found"
             @logger.error msg
             raise msg
@@ -74,7 +81,7 @@ module Minus5
           opts.on('-c','--config=file',"Use specified config file. This is yaml config file name from app_root/config dir.") do |file|
             file = "#{file}.yml" unless file.include?(".")
             @options.config_file = file
-            @options.config_file_set = true
+            @config_file_set = true
           end
           opts.on('-a','--app-name=file',"Use specified application name for daemon process.") do |name|
             @options.app_name = name
