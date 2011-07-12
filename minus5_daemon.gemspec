@@ -8,8 +8,9 @@ GEMSPEC = Gem::Specification.new do |spec|
   spec.author = 'Igor Anic'
   spec.email = 'ianic@minus5.hr'
 
-  spec.add_dependency('daemons', '~> 1.1.3')
+  spec.add_dependency('daemons', '~> 1.1.4')
   spec.add_dependency('hashie' , '~> 1.0.0')
+  spec.add_dependency('eventmachine' , '~> 0.12.10')
 
   spec.files = FileList['lib/*', 'lib/**/*', 'tasks/*' , 'bin/*', 'test/*','test/**/*', 'Rakefile'].to_a
 

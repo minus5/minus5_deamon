@@ -7,7 +7,7 @@ require 'yaml'
 #gems
 require 'rubygems'
 
-gem 'daemons', '= 1.1.3'
+gem 'daemons', '= 1.1.4'
 require 'daemons'
 require 'hashie'
 
