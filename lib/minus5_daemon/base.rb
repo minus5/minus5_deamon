@@ -19,10 +19,16 @@ module Minus5
           @active = false
           on_stop
         end
+        Signal.trap("INT") do
+          logger.debug "INT signal received"
+          @active = false
+          on_stop
+        end
         while @active
           run_loop
           sleep_with_check
         end
+        @logger.close
       end
 
       protected

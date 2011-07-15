@@ -4,7 +4,7 @@ module Minus5
     def self.run(klass)
       Runner.new(klass).run
     rescue => e
-      print "#{e}\n"
+      print "#{e}\n#{e.backtrace}\n"
     end
 
 
