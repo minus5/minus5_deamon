@@ -28,7 +28,7 @@ module Minus5
           run_loop
           sleep_with_check
         end
-        @logger.close
+        #@logger.close
       end
 
       protected
