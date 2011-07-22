@@ -17,18 +17,17 @@ module Minus5
         Signal.trap("TERM") do
           logger.debug "TERM signal received"
           @active = false
-          on_stop
         end
         Signal.trap("INT") do
           logger.debug "INT signal received"
-          @active = false
-          on_stop
+          @active = false        
         end
-        while @active
-          run_loop
-          sleep_with_check
+        if self.respond_to?(:run_loop)
+          while @active
+            run_loop
+            sleep_with_check
+          end
         end
-        #@logger.close
       end
 
       protected
@@ -50,9 +49,9 @@ module Minus5
         logger.debug "on_start"
       end
 
-      def run_loop
-        logger.debug "run_loop"
-      end
+      # def run_loop
+      #   logger.debug "run_loop"
+      # end
 
       def on_stop
         logger.debug "on_stop"

@@ -2,11 +2,10 @@ module Minus5
   module Daemon
 
     def self.run(klass)
-      Runner.new(klass).run
+      Runner.new(klass).run 
     rescue => e
       print "#{e}\n#{e.backtrace}\n"
     end
-
 
     class Runner
 
@@ -27,6 +26,10 @@ module Minus5
 
       attr_reader :logger
 
+      def self.logger
+        @@logger
+      end
+
       def run
         mkdirs
         Daemons.run_proc(@options.app_name, daemon_options) do
@@ -34,6 +37,7 @@ module Minus5
           logger.debug "options: #{@options}"
           service = @klass.new(@options, @logger)
           service.run
+          service.on_stop
         end
       end
 
@@ -66,6 +70,7 @@ module Minus5
         @logger.formatter = proc { |severity, datetime, progname, msg|
           "#{datetime.strftime("%Y-%m-%d %H:%M:%S")} #{severity}: #{msg}\n"
         }
+        @@logger = @logger
       end
 
       def parse_arg_options
