@@ -12,7 +12,7 @@ GEMSPEC = Gem::Specification.new do |spec|
   spec.add_dependency('hashie' , '~> 1.0.0')
   spec.add_dependency('eventmachine' , '~> 0.12.10')
 
-  spec.files = FileList['lib/*', 'lib/**/*', 'tasks/*' , 'bin/*', 'test/*','test/**/*', 'Rakefile'].to_a
+  spec.files = FileList['lib/*', 'lib/**/*', 'tasks/*' , 'bin/*', 'test/*','test/**/*', 'Rakefile', 'VERSION'].to_a
 
   spec.homepage = 'http://www.minus5.hr'
   spec.test_files = FileList['test/*_test.rb'].to_a

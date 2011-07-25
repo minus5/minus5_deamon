@@ -23,7 +23,7 @@ module Minus5
 
       attr_reader :logger, :options
 
-      def add_cmd_line_options
+      def add_command_line_arguments
         yield @opts
       end
 
@@ -48,13 +48,13 @@ module Minus5
       def init
         default_options
         init_logger
-        parse_command_line_arguments
-        load_environment_file
+        init_command_line_arguments
         mkdirs
       end
 
       def start
-        @args = @opts.parse!(ARGV)        
+        parse_command_line_arguments
+        load_environment_file
         start_deamon
       end
 
@@ -64,9 +64,10 @@ module Minus5
           logger.info "starting daemon pid: #{Process.pid}"
           trap_signals
           @threads = []
+          thread_id = 0
           @processes.each do |interval, block|
             @threads << Thread.new do
-              Thread.current[:id] = @threads.size
+              Thread.current[:id] = (thread_id = thread_id + 1)
               while active?                
                 block.call(options)
                 if interval
@@ -115,7 +116,7 @@ module Minus5
       def load_environment_file
         file = "#{app_root}/config/#{options.environment}.yml"
         if File.exists?(file)
-          options.merge!(YAML.load_file(file))
+          @options.merge!(YAML.load_file(file))
         end
       end
 
@@ -125,7 +126,7 @@ module Minus5
         @logger.datetime_format = "%H:%M:%S"        
         @logger.formatter = proc do |severity, datetime, progname, msg|
           thread_id = Thread.current[:id]
-          thread = thread_id ? " [#{thread_id}]" : ""
+          thread = thread_id ? (" [%3d]" % thread_id) : ""
           "#{datetime.strftime("%Y-%m-%d %H:%M:%S")} #{severity}#{thread}: #{msg}\n"
         end
         options.logger = @logger
@@ -137,6 +138,10 @@ module Minus5
       end
 
       def parse_command_line_arguments
+        @args = @opts.parse!(ARGV)
+      end
+
+      def init_command_line_arguments
         @opts = OptionParser.new do |opts|
           opts.banner = ""          
           opts.on('-n','--no-daemonize',"Don't run as a daemon") do
@@ -159,7 +164,7 @@ module Minus5
             puts "minus5_daemon version #{Minus5::Daemon::VERSION}"
             exit
           end
-        end        
+        end              
       end
 
       def print_usage(error)
