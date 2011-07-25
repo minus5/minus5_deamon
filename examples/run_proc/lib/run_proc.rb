@@ -25,12 +25,20 @@ Minus5::Daemon.run do
   end
 
   every(2) do
-    logger.info "process 3"
+    Minus5::Daemon.logger.info "process 3"
   end
 
   forever do
-    logger.info "process 4"
+    Minus5::Daemon.options.logger.info "process 4"
     suspend 0.5
+  end
+
+  once do
+    loop do
+      logger.info "process 5"
+      sleep 1
+      Thread.current.exit unless active?
+    end    
   end
   
 end

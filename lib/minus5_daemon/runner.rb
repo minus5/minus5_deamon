@@ -2,29 +2,23 @@ module Minus5
   module Daemon
 
     def self.run(&block)
-      runner = Runner.new &block
-      @@logger = runner.logger
+      Runner.new &block
     rescue => e
       print "#{e}\n#{e.backtrace}\n"
     end
-    
-    def self.logger
-      @@logger
-    end
 
+    class << self
+      attr_reader :logger, :options
+    end
+    
     class Runner
 
       def initialize(&block)
-        default_options
-        init_logger
-        parse_arg_options
-        load_config
-        load_environment_file
-        mkdirs
         @processes = []
+
+        init        
         instance_eval(&block)
-        @args = @opts.parse!(ARGV)        
-        start_deamon
+        start
       end
 
       attr_reader :logger, :options
@@ -44,19 +38,36 @@ module Minus5
       def forever(&block)
         @processes << [0, block]
       end
+
+      def active?
+        options.active
+      end
       
       private
+
+      def init
+        default_options
+        init_logger
+        parse_command_line_arguments
+        load_environment_file
+        mkdirs
+      end
+
+      def start
+        @args = @opts.parse!(ARGV)        
+        start_deamon
+      end
 
       def start_deamon
         Thread.abort_on_exception = true
         Daemons.run_proc(options.app_name, daemon_options) do
-          log_start_info
+          logger.info "starting daemon pid: #{Process.pid}"
           trap_signals
           @threads = []
           @processes.each do |interval, block|
             @threads << Thread.new do
               Thread.current[:id] = @threads.size
-              while options.active                
+              while active?                
                 block.call(options)
                 if interval
                   suspend(interval) if interval > 0
@@ -78,29 +89,24 @@ module Minus5
       def default_options
         @options = Hashie::Mash.new(
                                     :daemonize   => true,
-                                    :backtrace   => false,
-                                    :config_file => 'config.yml',
+                                    :backtrace   => false,                      
                                     :environment => 'production',
                                     :app_name    => start_script_name,
                                     :app_root    => app_root,
-                                    :log_dir     => log_dir,
-                                    :pid_dir     => pid_dir,
+                                    :log_dir     => "#{app_root}/log",
+                                    :pid_dir     => "#{app_root}/tmp/pids",
                                     :active      => true)
       end
 
-      def log_start_info
-        logger.info "starting daemon pid: #{Process.pid}"
-      end
-
       def trap_signals
-        Signal.trap("TERM") { stop_threads "TERM" }
-        Signal.trap("INT")  { stop_threads "INT" }
+        Signal.trap("TERM") { signal_received "TERM" }
+        Signal.trap("INT")  { signal_received "INT" }
       end
 
-      def stop_threads(signal)
+      def signal_received(signal)
         logger.debug "#{signal} signal received"
         options.active = false        
-        # Kernel::sleep 2
+        ##forcing thread to exit
         # @threads.each do |thread|
         #   thread.kill
         # end
@@ -110,19 +116,6 @@ module Minus5
         file = "#{app_root}/config/#{options.environment}.yml"
         if File.exists?(file)
           options.merge!(YAML.load_file(file))
-        end
-      end
-
-      def load_config
-        config_file = "#{app_root}/config/#{options.config_file}"
-        if File.exists?(config_file)
-          options.config = Hashie::Mash.new(YAML.load_file(config_file))
-        else
-          if @config_file_set
-            msg = "config file #{config_file} not found"
-            @logger.error msg
-            raise msg
-          end
         end
       end
 
@@ -136,9 +129,14 @@ module Minus5
           "#{datetime.strftime("%Y-%m-%d %H:%M:%S")} #{severity}#{thread}: #{msg}\n"
         end
         options.logger = @logger
+        #osiguraj da je logger vidljiv kako Minus5::Daemon.logger
+        global_logger = @logger
+        global_options = options
+        Minus5::Daemon.instance_eval { @logger = global_logger }
+        Minus5::Daemon.instance_eval { @options = global_options }
       end
 
-      def parse_arg_options
+      def parse_command_line_arguments
         @opts = OptionParser.new do |opts|
           opts.banner = ""          
           opts.on('-n','--no-daemonize',"Don't run as a daemon") do
@@ -186,28 +184,20 @@ END
 
       def daemon_options
         {
-          :backtrace   => @options.backtrace,
+          :backtrace   => options.backtrace,
           :dir_mode    => :normal,
           :log_output  => true,
-          :dir         => pid_dir,
-          :log_dir     => log_dir,
+          :dir         => options.pid_dir,
+          :log_dir     => options.log_dir,
           :ARGV        => @args,
-          :ontop       => !@options.daemonize,
-          :environment => @options.environment
+          :ontop       => !options.daemonize,
+          :environment => options.environment
         }
       end
 
       def mkdirs
-        FileUtils.mkdir_p pid_dir
-        FileUtils.mkdir_p log_dir
-      end
-
-      def log_dir
-        "#{app_root}/log"
-      end
-
-      def pid_dir
-        "#{app_root}/tmp/pids"
+        FileUtils.mkdir_p options.pid_dir
+        FileUtils.mkdir_p options.log_dir
       end
 
       def start_script_name
@@ -222,18 +212,18 @@ END
         @app_root = File.expand_path(File.join(File.dirname($0), root_rel))
       end
 
-      # sleep for delay, but check at least every second if TERM signal is received
+      # sleep for delay, but check at least every second if exit signal is received
       def suspend(interval)
         if interval < 1
           Kernel::sleep interval
           return
         end
         elapsed = 0
-        while @options.active && elapsed < interval
+        while active? && elapsed < interval
           Kernel::sleep((interval - elapsed < 1) ? (interval - elapsed) : 1)
           elapsed = elapsed + 1
         end
-        unless @options.active
+        unless active?
           logger.debug "suspend - exit thread"
           Thread.current.exit
         end
