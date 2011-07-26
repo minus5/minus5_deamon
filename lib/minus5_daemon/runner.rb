@@ -125,9 +125,8 @@ module Minus5
         @logger.level = Logger::DEBUG
         @logger.datetime_format = "%H:%M:%S"        
         @logger.formatter = proc do |severity, datetime, progname, msg|
-          thread_id = Thread.current[:id]
-          thread = thread_id ? (" [%3d]" % thread_id) : ""
-          "#{datetime.strftime("%Y-%m-%d %H:%M:%S")} #{severity}#{thread}: #{msg}\n"
+          time = datetime.strftime("%Y-%m-%d %H:%M:%S")
+          head = "%s %-5s [%3d]: %s\n" % [time, severity, Thread.current[:id] || 0 , msg]
         end
         options.logger = @logger
         #osiguraj da je logger vidljiv kako Minus5::Daemon.logger
