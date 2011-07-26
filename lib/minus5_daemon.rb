@@ -1,4 +1,3 @@
-
 #core lib
 require 'fileutils'
 require 'optparse'

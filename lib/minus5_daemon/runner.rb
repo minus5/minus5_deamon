@@ -61,7 +61,7 @@ module Minus5
       def start_deamon
         Thread.abort_on_exception = true
         Daemons.run_proc(options.app_name, daemon_options) do
-          logger.info "starting daemon pid: #{Process.pid}"
+          logger.info "starting daemon pid: #{Process.pid}" if options.run_as_daemon
           trap_signals
           @threads = []
           thread_id = 0
@@ -89,14 +89,14 @@ module Minus5
 
       def default_options
         @options = Hashie::Mash.new(
-                                    :daemonize   => true,
-                                    :backtrace   => false,                      
-                                    :environment => 'production',
-                                    :app_name    => start_script_name,
-                                    :app_root    => app_root,
-                                    :log_dir     => "#{app_root}/log",
-                                    :pid_dir     => "#{app_root}/tmp/pids",
-                                    :active      => true)
+                                    :run_as_daemon => true,
+                                    :backtrace     => false,                      
+                                    :environment   => 'production',
+                                    :app_name      => start_script_name,
+                                    :app_root      => app_root,
+                                    :log_dir       => "#{app_root}/log",
+                                    :pid_dir       => "#{app_root}/tmp/pids",
+                                    :active        => true)
       end
 
       def trap_signals
@@ -145,7 +145,7 @@ module Minus5
         @opts = OptionParser.new do |opts|
           opts.banner = ""          
           opts.on('-n','--no-daemonize',"Don't run as a daemon") do
-            @options.daemonize = false
+            @options.run_as_daemon = false
           end
           opts.on('-e','--environment=ENVIRONMENT',"Specifies the environment for this server. Default: production") do |name|
             @options.environment = name
@@ -195,7 +195,7 @@ END
           :dir         => options.pid_dir,
           :log_dir     => options.log_dir,
           :ARGV        => @args,
-          :ontop       => !options.daemonize,
+          :ontop       => !options.run_as_daemon,
           :environment => options.environment
         }
       end
