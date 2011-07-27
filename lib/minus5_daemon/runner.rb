@@ -42,6 +42,10 @@ module Minus5
       def active?
         options.active
       end
+
+      def touch_log
+        FileUtils.touch options.log_file
+      end
       
       private
 
@@ -55,6 +59,8 @@ module Minus5
       def start
         parse_command_line_arguments
         load_environment_file
+        options.log_file = "#{options.log_dir}/#{options.environment}.log"
+        options.crash_dump_file = "#{options.log_dir}/crash_dump_#{options.environment}.log"
         start_deamon
       end
 
@@ -166,7 +172,7 @@ module Minus5
         end              
       end
 
-      def print_usage(error)
+      def print_usage(error = nil)
         puts "ERROR: #{error.to_s}\n"
         puts <<-END
   Usage: #{@options.app_name} <options> <command>
@@ -188,14 +194,16 @@ END
 
       def daemon_options
         {
-          :backtrace   => options.backtrace,
-          :dir_mode    => :normal,
-          :log_output  => true,
-          :dir         => options.pid_dir,
-          :log_dir     => options.log_dir,
-          :ARGV        => @args,
-          :ontop       => !options.run_as_daemon,
-          :environment => options.environment
+          :backtrace      => options.backtrace,
+          :dir_mode       => :normal,
+          :log_output     => true,
+          :dir            => options.pid_dir,
+          :log_dir        => options.log_dir,
+          :ARGV           => @args,
+          :ontop          => !options.run_as_daemon,
+          :environment    => options.environment,
+          :output_logfile => options.log_file,
+          :logfile        => options.crash_dump_file
         }
       end
 

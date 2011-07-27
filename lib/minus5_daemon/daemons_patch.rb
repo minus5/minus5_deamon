@@ -7,19 +7,11 @@ module Daemons
     alias_method :logfile_orig, :logfile
 
     def output_logfile
-      if options[:environment]
-        File.join(logdir, options[:environment] + '.log')
-      else
-        output_logfile_orig
-      end
+      options[:output_logfile] || output_logfile_orig
     end
     
     def logfile
-      if options[:environment]
-        File.join(logdir, 'crash_dump_' + options[:environment] + '.log')
-      else
-        logfilr_orig
-      end
+      options[:logfile] || logfile_orig
     end
 
   end
