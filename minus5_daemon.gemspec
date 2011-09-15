@@ -10,7 +10,6 @@ GEMSPEC = Gem::Specification.new do |spec|
 
   spec.add_dependency('daemons', '~> 1.1.4')
   spec.add_dependency('hashie' , '~> 1.0.0')
-  spec.add_dependency('eventmachine' , '~> 0.12.10')
 
   spec.files = FileList['lib/*', 'lib/**/*', 'tasks/*' , 'bin/*', 'test/*','test/**/*', 'Rakefile', 'VERSION'].to_a
 

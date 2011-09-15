@@ -24,3 +24,7 @@ task :deploy => [:gem] do
   `ssh ianic@gems.minus5.hr "cd /var/www/apps/gems; sudo gem generate_index"`
 end
 
+task :pero do
+  file = "pkg/minus5_daemon-#{GEMSPEC.version}.gem"
+  print "scp #{file} gems.minus5.hr:/var/www/apps/gems/gems"
+end

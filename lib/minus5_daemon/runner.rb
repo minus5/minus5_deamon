@@ -4,7 +4,7 @@ module Minus5
     def self.run(&block)
       Runner.new &block
     rescue => e
-      print "#{e}\n#{e.backtrace}\n"
+      print "#{e}  #{e.backtrace}\n"
     end
 
     class << self
@@ -76,11 +76,8 @@ module Minus5
               Thread.current[:id] = (thread_id = thread_id + 1)
               while active?                
                 block.call(options)
-                if interval
-                  suspend(interval) if interval > 0
-                else
-                  break
-                end                
+                break             if interval.nil?
+                suspend(interval) if interval > 0
               end
             end
           end

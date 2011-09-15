@@ -16,6 +16,7 @@ require 'hashie'
 $LOAD_PATH.unshift "#{File.dirname(__FILE__)}/minus5_daemon/"
 require 'runner.rb'
 require 'daemons_patch.rb'
+require 'service.rb'
 
 module Minus5
   module Daemon
