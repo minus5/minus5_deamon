@@ -198,7 +198,10 @@ END
         return @app_root if @app_root
         start_dir = File.expand_path(File.dirname($0))
         root_rel = ""
-        root_rel = ".." if start_dir.end_with?("/lib") || start_dir.end_with?("/bin")
+        #FIXME - napravi nesto da izbjegnes ove lib bin test
+        root_rel = ".." if start_dir.end_with?("/lib") || 
+          start_dir.end_with?("/bin") || 
+          start_dir.end_with?("/test")
         @app_root = File.expand_path(File.join(File.dirname($0), root_rel))
       end
 
