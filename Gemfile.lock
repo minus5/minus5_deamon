@@ -1,12 +1,12 @@
 GEM
   remote: http://rubygems.org/
   specs:
-    daemons (1.1.4)
-    hashie (1.0.0)
+    daemons (1.1.8)
+    hashie (1.2.0)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
-  daemons (= 1.1.4)
-  hashie (= 1.0.0)
+  daemons
+  hashie
