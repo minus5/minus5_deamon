@@ -2,7 +2,7 @@
 gem_file = File.join(File.expand_path(File.dirname(__FILE__)), "/../../../", "lib/minus5_daemon.rb")
 File.exists?(gem_file) ? require(gem_file) : require('minus5_daemon')
 
-Minus5::Daemon.run do 
+Minus5::Service.run do 
 
   # add_cmd_line_options do |opts|
   #   opts.on_head("--param1", "EXIT!!!") do
@@ -10,19 +10,19 @@ Minus5::Daemon.run do
   #   end    
   # end
 
-  # once do
-  #   5.times do
-  #     logger.info "process 1"
-  #     suspend 1    
-  #   end
-  # end
+  once do
+    5.times do
+      logger.info "process 1"
+      suspend 1    
+    end
+  end
 
-  # once do
-  #   5.times do
-  #     logger.info "process 2"
-  #     suspend 1    
-  #   end
-  # end
+  once do
+    5.times do
+      logger.info "process 2"
+      suspend 1    
+    end
+  end
 
   # every(2) do
   #   Minus5::Daemon.logger.info "process 3"
@@ -42,8 +42,7 @@ Minus5::Daemon.run do
   # end
 
   every(1) do
-    logger.info "touching"
-    touch_log
+    logger.info "process 3"
   end
   
 end

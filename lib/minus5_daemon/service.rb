@@ -150,7 +150,11 @@ module Minus5
 
       def load_config_file
         file = "#{app_root}/config/#{@cmd_options.config}.yml"
-        @options.merge!(YAML.load_file(file)) # if File.exists?(file)
+        begin
+          @options.merge!(YAML.load_file(file)) 
+        rescue => e
+          @logger.error "failed to load config file #{file}"
+        end
         @options.merge!(@cmd_options)
       end
 
