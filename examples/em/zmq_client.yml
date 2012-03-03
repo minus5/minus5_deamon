@@ -1,0 +1,7 @@
+sockets:
+  sub:
+    type: sub
+    address: ipc:///tmp/zmq_server_pub.socket
+  req:
+    type: dealer
+    address: ipc:///tmp/zmq_server_rr.socket

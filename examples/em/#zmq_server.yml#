@@ -1,0 +1,7 @@
+sockets:
+  pub:
+    type: pub
+    address: ipc:///tmp/zmq_server_pub.socket
+  rep: 
+    type: router
+    address: ipc:///tmp/zmq_server_rr.socket

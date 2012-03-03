@@ -1,12 +1,24 @@
 GEM
   remote: http://rubygems.org/
   specs:
-    daemons (1.1.8)
+    em-zeromq (0.3.0)
+      eventmachine (= 1.0.0.beta.4)
+      ffi (>= 1.0.0)
+      ffi-rzmq (= 0.9.5)
+    eventmachine (1.0.0.beta.4)
+    ffi (1.0.11)
+    ffi-rzmq (0.9.5)
+      ffi
     hashie (1.2.0)
+    json (1.6.5)
+    micro-optparse (1.1.5)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
-  daemons
+  em-zeromq (= 0.3.0)
+  eventmachine
   hashie
+  json
+  micro-optparse
