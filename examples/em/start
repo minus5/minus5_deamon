@@ -1,0 +1,2 @@
+ruby zmq_server.rb -c zmq_server.yml &
+ruby zmq_client.rb -c zmq_client.yml

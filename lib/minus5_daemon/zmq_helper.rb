@@ -1,3 +1,7 @@
+require 'json'
+require 'zlib'
+require 'hashie'
+
 module Minus5
   module Service
 
@@ -7,20 +11,20 @@ module Minus5
         @zmq_proxy = ZmqProxy.new(options.sockets, self) if options.sockets
       end
 
-      def publish(socket, action, data=nil)
-        @zmq_proxy.send_msg(socket, action, data)
+      def publish(socket, action, body = nil, headers = {})
+        @zmq_proxy.send_msg socket, action, body, headers
       end
 
-      def cast(socket_name, action, data=nil)
-        @zmq_proxy.send_msg socket_name, action, data
+      def cast(socket, action, body = nil, headers={})
+        @zmq_proxy.send_msg socket, action, body, headers
       end
 
-      def zmq_receive(socket, action, data)
-        @receive_proc.call socket, action.to_sym, data
+      def zmq_receive(socket, action, headers, body)
+        @receive_proc.call socket, action.to_sym, body, headers
       end
 
-      def zmq_request(socket, action, data)
-        @receive_proc.call socket, action.to_sym, data
+      def zmq_request(socket, action, headers, body)
+        @receive_proc.call socket, action.to_sym, body, headers
       end
       
     end
@@ -34,34 +38,56 @@ module Minus5
         @handler = handler
         connect 
       end
+
+      #creates multipart message, with two parts headers and body
+      #action is part of the header
+      #body is compressed
+      def send_msg(socket_name, action, body = nil, headers = {})
+        find_socket(socket_name).socket.send_msg(*ZmqProxy.pack_msg(action, headers, body))
+      end      
       
-      def send_msg(socket_name, action, data=nil)
-        s = @sockets[socket_name]
-        raise "socket #{socket_name} not found" unless s
-        msg = ZmqProxy.pack({action => data})
-        s.socket.send_msg msg
+      def self.pack_msg(action, headers, body)
+        headers = {} unless headers
+        headers[:action]       = action
+        headers[:encoding]     = "deflate"
+        if body.kind_of?(String)
+          headers[:content_type] = "string"
+        elsif body.kind_of?(Array) || body.kind_of?(Hash)
+          headers[:content_type] = "json"
+        else
+          headers[:content_type] = "json/packed"
+          body = {:body => body} 
+        end
+        body        = JSON.generate(body) unless body.kind_of?(String)
+        msg_headers = JSON.generate(headers)
+        msg_body    = Zlib::Deflate.deflate(body)
+        [msg_headers, msg_body]
       end
 
-      def self.unpack(msg)
-        JSON.parse(Zlib::Inflate.inflate(msg))    
-      end
-
-      def self.pack(actions)
-        Zlib::Deflate.deflate(JSON.generate(actions))
+      def self.unpack_msg(msg_parts)
+        msg_headers = msg_parts[-2].copy_out_string
+        msg_body    = msg_parts[-1].copy_out_string
+        headers     = Hashie::Mash.new(JSON.parse(msg_headers))
+        body        = Zlib::Inflate.inflate(msg_body) 
+        body        = JSON.parse(body) if headers.content_type.include?("json")
+        body        = body["body"] if headers.content_type.include?("packed")
+        action      = headers.action
+        [action, headers, body]
       end
 
       private
+
+      def find_socket(socket_name)
+        s = @sockets[socket_name]
+        raise "socket #{socket_name} not found" unless s
+        s
+      end
       
       def connect
         @context = EM::ZeroMQ::Context.new(1)
         @sockets.each_pair do |name, socket|
           socket.name = name
           socket.type_id = ZMQ.const_get(socket.type.upcase)
-          # if EventMachine::ZeroMQ::Context::READABLES.include?(type)
-          #   connect_readable(socket, type)
-          # elsif EventMachine::ZeroMQ::Context::WRITABLES.include?(type)
-          #   connect_writable(socket, type)
-          # end
           socket.socket = self.send("connect_#{socket.type}", socket)
         end
       end
@@ -78,20 +104,6 @@ module Minus5
           s.connect socket.address
         end
       end
-
-      # def connect_req(socket)
-      #   controller = RequestResponseController.new(@handler, socket.name)
-      #   @context.socket(ZMQ::XREQ, controller) do |s| 
-      #     s.connect socket.address
-      #   end
-      # end
-
-      # def connect_rep(socket)
-      #   controller = RequestResponseController.new(@handler, socket.name)
-      #   @context.socket(ZMQ::XREP, controller) do |s| 
-      #     s.bind socket.address 
-      #   end
-      # end
 
       def connect_router(socket)
         controller = RequestResponseController.new(@handler, socket.name)
@@ -119,18 +131,11 @@ module Minus5
       end
 
       def on_writable(socket)
-        print "on_writable\n"
       end
 
       def on_readable(socket, parts)
-        message = parts.map{|p| p.copy_out_string}.join("")
-        handle_message(socket, message)
-      end
-
-      protected
-      
-      def handle_message(socket, message)
-        print "unhandled message\n"
+        action, headers, body = ZmqProxy.unpack_msg(parts)
+        @handler.zmq_receive @name, action, headers, body
       end
 
     end
@@ -139,25 +144,14 @@ module Minus5
 
       def on_readable(socket, parts)
         from = parts[0].copy_out_string
-        message = parts[1].copy_out_string
-        response = {}
-        ZmqProxy.unpack(message).each_pair do |action, data|
-          response[action] = @handler.zmq_request(@name, action, data)
-        end      
-        socket.send_msg from, ZmqProxy.pack(response)
+        action, headers, body = ZmqProxy.unpack_msg(parts)
+        response_body, response_headers = @handler.zmq_request(@name, action, headers, body)
+        socket.send_msg *([from] + ZmqProxy.pack_msg(action, response_headers, response_body))
       end
 
     end
 
     class ReceiveController < BaseController
-
-      def on_readable(socket, parts)
-        message = parts[0].copy_out_string
-        ZmqProxy.unpack(message).each_pair do |action, data|
-          @handler.zmq_receive @name, action, data
-        end        
-      end
-      
     end
 
   end

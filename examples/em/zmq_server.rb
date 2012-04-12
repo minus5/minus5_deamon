@@ -6,12 +6,12 @@ Minus5::Service.em do
 
   every(1) do 
     msg = Time.now
-    logger.debug "pub time #{msg}"
+    logger.debug "server: pub time #{msg}"
     publish :pub, :time, msg
   end
 
-  receive do |socket, action, data|    
-    logger.debug "#{socket}:#{action}:#{data}" 
+  receive do |socket, action, data, headers|
+    logger.debug "server: #{socket}:#{action}:#{data}" 
     "status is ok"
   end
   

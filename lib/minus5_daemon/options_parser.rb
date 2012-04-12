@@ -29,11 +29,12 @@ module Minus5
         @options.merge!(@command_line_options)
       end
 
-      def find_config_file
+      def find_config_file        
         start_dir = File.expand_path(File.dirname($0))
         name = @command_line_options.config
         name = "#{name}.yml" unless name.end_with?(".yml")
-        [File.join(start_dir, name),
+        [name, 
+          File.join(start_dir, name),
           File.join(start_dir, "../config", name),
           File.join(start_dir, "config", name)].find do |file|
           return file if File.exists?(file)
