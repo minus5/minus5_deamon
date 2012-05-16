@@ -6,7 +6,7 @@ module Minus5
   module Service
 
     module ZmqHelper
-      
+
       def zmq_init
         @zmq_proxy = ZmqProxy.new(options.sockets, self) if options.sockets
       end
@@ -23,12 +23,12 @@ module Minus5
         @receive_proc.call socket, action.to_sym, body, headers
       end
 
-      def zmq_request(socket, action, headers, body)
-        @receive_proc.call socket, action.to_sym, body, headers
+      def zmq_request(socket, action, headers, body, &callback)
+        @receive_proc.call(socket, action.to_sym, body, headers, callback)
       end
-      
+
     end
-    
+
     class ZmqProxy
 
       require 'em-zeromq'
@@ -36,7 +36,7 @@ module Minus5
       def initialize(sockets, handler)
         @sockets = sockets
         @handler = handler
-        connect 
+        connect
       end
 
       #creates multipart message, with two parts headers and body
@@ -44,19 +44,20 @@ module Minus5
       #body is compressed
       def send_msg(socket_name, action, body = nil, headers = {})
         find_socket(socket_name).socket.send_msg(*ZmqProxy.pack_msg(action, headers, body))
-      end      
-      
+      end
+
       def self.pack_msg(action, headers, body)
         headers = {} unless headers
         headers[:action]       = action
         headers[:encoding]     = "deflate"
         if body.kind_of?(String)
-          headers[:content_type] = "string"
+          #ako je vec postavljen content_type prihvati taj
+          headers[:content_type] = "string" unless headers[:content_type]
         elsif body.kind_of?(Array) || body.kind_of?(Hash)
           headers[:content_type] = "json"
         else
           headers[:content_type] = "json/packed"
-          body = {:body => body} 
+          body = {:body => body}
         end
         body        = JSON.generate(body) unless body.kind_of?(String)
         msg_headers = JSON.generate(headers)
@@ -65,14 +66,23 @@ module Minus5
       end
 
       def self.unpack_msg(msg_parts)
-        msg_headers = msg_parts[-2].copy_out_string
-        msg_body    = msg_parts[-1].copy_out_string
-        headers     = Hashie::Mash.new(JSON.parse(msg_headers))
-        body        = Zlib::Inflate.inflate(msg_body) 
-        body        = JSON.parse(body) if headers.content_type.include?("json")
-        body        = body["body"] if headers.content_type.include?("packed")
-        action      = headers.action
-        [action, headers, body]
+        if msg_parts.size == 1
+          # fall back na stari nacin
+          # ovako salje ponuda_service
+          data = JSON.parse(Zlib::Inflate.inflate(msg_parts[0].copy_out_string))
+          key = data.keys[0]
+          [key, {}, data[key]]
+        else
+          msg_headers = msg_parts[-2].copy_out_string
+          msg_body    = msg_parts[-1].copy_out_string
+          headers     = Hashie::Mash.new(JSON.parse(msg_headers))
+
+          body        = Zlib::Inflate.inflate(msg_body)
+          body        = JSON.parse(body) if headers.content_type.include?("json")
+          body        = body["body"] if headers.content_type.include?("packed")
+          action      = headers.action
+          [action, headers, body]
+        end
       end
 
       private
@@ -82,7 +92,7 @@ module Minus5
         raise "socket #{socket_name} not found" unless s
         s
       end
-      
+
       def connect
         @context = EM::ZeroMQ::Context.new(1)
         @sockets.each_pair do |name, socket|
@@ -107,15 +117,15 @@ module Minus5
 
       def connect_router(socket)
         controller = RequestResponseController.new(@handler, socket.name)
-        @context.socket(ZMQ::ROUTER, controller) do |s| 
+        @context.socket(ZMQ::ROUTER, controller) do |s|
           s.bind socket.address
         end
       end
 
       def connect_dealer(socket)
         controller = ReceiveController.new(@handler, socket.name)
-        @context.socket(ZMQ::DEALER, controller) do |s| 
-          s.connect socket.address 
+        @context.socket(ZMQ::DEALER, controller) do |s|
+          s.connect socket.address
         end
       end
 
@@ -145,8 +155,9 @@ module Minus5
       def on_readable(socket, parts)
         from = parts[0].copy_out_string
         action, headers, body = ZmqProxy.unpack_msg(parts)
-        response_body, response_headers = @handler.zmq_request(@name, action, headers, body)
-        socket.send_msg *([from] + ZmqProxy.pack_msg(action, response_headers, response_body))
+        @handler.zmq_request(@name, action, headers, body) do |response_body, response_headers|
+          socket.send_msg *([from] + ZmqProxy.pack_msg(action, response_headers, response_body))
+        end
       end
 
     end
