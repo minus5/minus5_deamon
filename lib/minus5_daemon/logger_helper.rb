@@ -2,7 +2,7 @@ module Minus5
   module Service
 
     module LoggerHelper
-      
+
       attr_reader :logger
 
       private
@@ -13,7 +13,7 @@ module Minus5
         @logger.datetime_format = "%H:%M:%S"
         pid = Process.pid
         @logger.formatter = proc do |severity, datetime, progname, msg|
-          time = datetime.strftime("%Y-%m-%d %H:%M:%S")
+          time = datetime.strftime("%Y-%m-%d %H:%M:%S.%L")
           head = "%s %-5s [%5d-%02d]: %s\n" % [time, severity, pid, Thread.current[:id] || 0 , msg]
         end
         $stdout.sync = true
