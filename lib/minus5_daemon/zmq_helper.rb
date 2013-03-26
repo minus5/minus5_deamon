@@ -2,6 +2,7 @@ require 'json'
 require 'zlib'
 require 'hashie'
 
+
 module Minus5
   module Service
 
@@ -104,29 +105,40 @@ module Minus5
 
       def connect_pub(socket)
         controller = BaseController.new(@handler, socket.name)
-        @context.socket(ZMQ::PUB, controller){|s| s.bind socket.address}
+        conn = @context.socket(ZMQ::PUB)
+        conn.connect(socket.address)
+        conn
       end
 
       def connect_sub(socket)
         controller = ReceiveController.new(@handler, socket.name)
-        @context.socket(ZMQ::SUB, controller) do |s|
-          s.subscribe(socket.filter || '')
-          s.connect socket.address
-        end
+        conn = @context.socket(ZMQ::SUB)
+        conn.bind(socket.address)
+        conn.subscribe(socket.filter || '')
+        conn.on(:message){ |*parts|
+          controller.on_readable(conn, parts)
+        }
+        conn
       end
 
       def connect_router(socket)
         controller = RequestResponseController.new(@handler, socket.name)
-        @context.socket(ZMQ::ROUTER, controller) do |s|
-          s.bind socket.address
-        end
+        conn = @context.socket(ZMQ::ROUTER)
+        conn.connect(socket.address)
+        conn.on(:message) { |*parts|
+          controller.on_readable(conn, parts)
+        }
+        conn
       end
 
       def connect_dealer(socket)
         controller = ReceiveController.new(@handler, socket.name)
-        @context.socket(ZMQ::DEALER, controller) do |s|
-          s.connect socket.address
-        end
+        conn = @context.socket(ZMQ::DEALER)
+        conn.bind(socket.address)
+        conn.on(:message) { |*parts|
+          controller.on_readable(conn, parts)
+        }
+        conn
       end
 
     end

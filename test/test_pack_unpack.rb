@@ -1,5 +1,5 @@
 require 'test/unit'
-require "lib/minus5_daemon/zmq_helper.rb"
+require "./lib/minus5_daemon/zmq_helper.rb"
 
 class String
   def copy_out_string

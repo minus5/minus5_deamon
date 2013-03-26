@@ -21,7 +21,7 @@ task :deploy => [:gem] do
   print "copying to gems.minus5.hr\n"
   `scp #{file} gems.minus5.hr:/var/www/apps/gems/gems`
   print "updating gem server index\n"
-  `ssh ianic@gems.minus5.hr "cd /var/www/apps/gems; sudo gem generate_index"`
+  `ssh vegi@gems.minus5.hr "cd /var/www/apps/gems; sudo gem generate_index"`
 end
 
 task :pero do
