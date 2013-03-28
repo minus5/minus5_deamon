@@ -72,6 +72,7 @@ module Minus5
           # ovako salje ponuda_service
           data = JSON.parse(Zlib::Inflate.inflate(msg_parts[0].copy_out_string))
           key = data.keys[0]
+          msg_parts.each{|part| part.close}
           [key, {}, data[key]]
         else
           msg_headers = msg_parts[-2].copy_out_string
@@ -82,6 +83,7 @@ module Minus5
           body        = JSON.parse(body) if headers.content_type.include?("json")
           body        = body["body"] if headers.content_type.include?("packed")
           action      = headers.action
+          msg_parts.each{|part| part.close}
           [action, headers, body]
         end
       end
@@ -135,6 +137,27 @@ module Minus5
         controller = ReceiveController.new(@handler, socket.name)
         conn = @context.socket(ZMQ::DEALER)
         conn.bind(socket.address)
+        conn.on(:message) { |*parts|
+          controller.on_readable(conn, parts)
+        }
+        conn
+      end
+
+      def connect_rep(socket)
+        controller = RequestResponseController.new(@handler, socket.name)
+        conn = @context.socket(ZMQ::REP)
+        conn.bind(socket.address)
+        conn.on(:message) { |*parts|
+          controller.on_readable(conn, parts)
+        }
+        conn
+      end
+
+
+      def connect_req(socket)
+        controller = ReceiveController.new(@handler, socket.name)
+        conn = @context.socket(ZMQ::REQ)
+        conn.connect(socket.address)
         conn.on(:message) { |*parts|
           controller.on_readable(conn, parts)
         }

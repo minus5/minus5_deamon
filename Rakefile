@@ -1,14 +1,14 @@
-require "rake/testtask" 
+require "rake/testtask"
 require 'rubygems/package_task'
 load 'minus5_daemon.gemspec'
 
-task :default => [:test] 
+task :default => [:test]
 
-Rake::TestTask.new do |test| 
-  test.libs << "test" 
-  test.test_files = Dir[ "test/test_*.rb" ] 
-  test.verbose = true   
-end 
+Rake::TestTask.new do |test|
+  test.libs << "test"
+  test.test_files = Dir[ "test/test_*.rb" ]
+  test.verbose = true
+end
 
 Gem::PackageTask.new(GEMSPEC) do |pkg|
 end
@@ -21,7 +21,7 @@ task :deploy => [:gem] do
   print "copying to gems.minus5.hr\n"
   `scp #{file} gems.minus5.hr:/var/www/apps/gems/gems`
   print "updating gem server index\n"
-  `ssh vegi@gems.minus5.hr "cd /var/www/apps/gems; sudo gem generate_index"`
+  `ssh ianic@gems.minus5.hr "cd /var/www/apps/gems; sudo gem generate_index"`
 end
 
 task :pero do
