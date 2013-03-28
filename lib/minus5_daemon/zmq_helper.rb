@@ -108,14 +108,14 @@ module Minus5
       def connect_pub(socket)
         controller = BaseController.new(@handler, socket.name)
         conn = @context.socket(ZMQ::PUB)
-        conn.connect(socket.address)
+        conn.bind(socket.address)
         conn
       end
 
       def connect_sub(socket)
         controller = ReceiveController.new(@handler, socket.name)
         conn = @context.socket(ZMQ::SUB)
-        conn.bind(socket.address)
+        conn.connect(socket.address)
         conn.subscribe(socket.filter || '')
         conn.on(:message){ |*parts|
           controller.on_readable(conn, parts)
@@ -126,7 +126,7 @@ module Minus5
       def connect_router(socket)
         controller = RequestResponseController.new(@handler, socket.name)
         conn = @context.socket(ZMQ::ROUTER)
-        conn.connect(socket.address)
+        conn.bind(socket.address)
         conn.on(:message) { |*parts|
           controller.on_readable(conn, parts)
         }
@@ -136,27 +136,6 @@ module Minus5
       def connect_dealer(socket)
         controller = ReceiveController.new(@handler, socket.name)
         conn = @context.socket(ZMQ::DEALER)
-        conn.bind(socket.address)
-        conn.on(:message) { |*parts|
-          controller.on_readable(conn, parts)
-        }
-        conn
-      end
-
-      def connect_rep(socket)
-        controller = RequestResponseController.new(@handler, socket.name)
-        conn = @context.socket(ZMQ::REP)
-        conn.bind(socket.address)
-        conn.on(:message) { |*parts|
-          controller.on_readable(conn, parts)
-        }
-        conn
-      end
-
-
-      def connect_req(socket)
-        controller = ReceiveController.new(@handler, socket.name)
-        conn = @context.socket(ZMQ::REQ)
         conn.connect(socket.address)
         conn.on(:message) { |*parts|
           controller.on_readable(conn, parts)

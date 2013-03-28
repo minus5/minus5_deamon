@@ -5,17 +5,21 @@ zmq = EM::ZeroMQ::Context.new(1)
 
 # DEALER - ROUTER
 EM.run {
-  push = zmq.socket(ZMQ::DEALER)
+  push = zmq.socket(ZMQ::ROUTER)
   push.bind("ipc:///tmp/zmq_server_rr.socket") #  tcp://127.0.0.1:2091
 
-  push.on(:message) do |m|
-  	push.send_msg("DEALER RE: #{m}")
+  push.on(:message) do |*m|
+    puts "message size: #{m.size}"
+    from = m[0].copy_out_string
+    msg = m[1].copy_out_string
+    puts "received: #{msg}"
+    push.send_msg(from, "re: #{msg}")
   end
 
-  EM.add_periodic_timer(1) {
-    puts "PUB"
-    push.send_msg("DEALER SEND: Hello")
-  }
+#  EM.add_periodic_timer(1) {
+#    puts "PUB"
+#    push.send_msg("DEALER SEND: Hello")
+#  }
 }
 
 # PUB - SUB
