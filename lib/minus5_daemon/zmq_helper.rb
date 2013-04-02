@@ -2,7 +2,6 @@ require 'json'
 require 'zlib'
 require 'hashie'
 
-
 module Minus5
   module Service
 
@@ -106,78 +105,54 @@ module Minus5
       end
 
       def connect_pub(socket)
-        controller = BaseController.new(@handler, socket.name)
         conn = @context.socket(ZMQ::PUB)
         conn.bind(socket.address)
         conn
       end
 
       def connect_sub(socket)
-        controller = ReceiveController.new(@handler, socket.name)
         conn = @context.socket(ZMQ::SUB)
         conn.connect(socket.address)
         conn.subscribe(socket.filter || '')
         conn.on(:message){ |*parts|
-          controller.on_readable(conn, parts)
+          on_receive(conn, parts, socket.name)
         }
         conn
       end
 
       def connect_router(socket)
-        controller = RequestResponseController.new(@handler, socket.name)
         conn = @context.socket(ZMQ::ROUTER)
         conn.bind(socket.address)
         conn.on(:message) { |*parts|
-          controller.on_readable(conn, parts)
+          on_request_response(conn, parts, socket.name)
         }
         conn
       end
 
       def connect_dealer(socket)
-        controller = ReceiveController.new(@handler, socket.name)
         conn = @context.socket(ZMQ::DEALER)
         conn.connect(socket.address)
         conn.on(:message) { |*parts|
-          controller.on_readable(conn, parts)
+          on_receive(conn, parts, socket.name)
         }
         conn
       end
 
-    end
-
-    class BaseController
-
-      attr_reader :received
-
-      def initialize(handler, name)
-        @handler = handler
-        @name = name
-      end
-
-      def on_writable(socket)
-      end
-
-      def on_readable(socket, parts)
+      def on_receive(conn, parts, socket)
         action, headers, body = ZmqProxy.unpack_msg(parts)
-        @handler.zmq_receive @name, action, headers, body
+        @handler.zmq_receive socket, action, headers, body
       end
 
-    end
-
-    class RequestResponseController < BaseController
-
-      def on_readable(socket, parts)
+      def on_request_response(conn, parts, socket)
+        puts "on_request_response"
         from = parts[0].copy_out_string
         action, headers, body = ZmqProxy.unpack_msg(parts)
-        @handler.zmq_request(@name, action, headers, body) do |response_body, response_headers|
-          socket.send_msg *([from] + ZmqProxy.pack_msg(action, response_headers, response_body))
+        @handler.zmq_request(socket, action, headers, body) do |response_body, response_headers|
+          puts "sending response: #{response_body}"
+          conn.send_msg *([from] + ZmqProxy.pack_msg(action, response_headers, response_body))
         end
       end
 
     end
-
-    class ReceiveController < BaseController
-    end
-
   end
 end
