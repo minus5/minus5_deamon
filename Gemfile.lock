@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    minus5_daemon (0.7.7)
+    minus5_daemon (0.7.8)
       em-zeromq (= 0.4.1)
       eventmachine (= 1.0.0)
       hashie
@@ -16,11 +16,11 @@ GEM
       ffi (>= 1.0.0)
       ffi-rzmq (= 0.9.7)
     eventmachine (1.0.0)
-    ffi (1.6.0)
+    ffi (1.9.0)
     ffi-rzmq (0.9.7)
       ffi
     hashie (2.0.3)
-    json (1.7.7)
+    json (1.8.0)
     micro-optparse (1.1.5)
 
 PLATFORMS

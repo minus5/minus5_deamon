@@ -1,0 +1,10 @@
+sockets:
+  # ttx:
+  #   type: sub
+  #   address: tcp://192.168.10.237:5503
+  ponuda:
+    type: sub
+    address: tcp://192.168.10.237:5501
+  # mongo_replication:
+  #   type: sub
+  #   address: tcp://192.168.10.237:5507

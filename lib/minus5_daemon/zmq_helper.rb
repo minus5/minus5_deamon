@@ -48,6 +48,9 @@ module Minus5
 
       def self.pack_msg(action, headers, body)
         headers = {} unless headers
+        if action.to_s == "ponuda"
+          action = "get"
+        end
         headers[:action]       = action
         headers[:encoding]     = "deflate"
         if body.kind_of?(String)
@@ -67,12 +70,13 @@ module Minus5
 
       def self.unpack_msg(msg_parts)
         if msg_parts.size == 1
-          # fall back na stari nacin
-          # ovako salje ponuda_service
-          data = JSON.parse(Zlib::Inflate.inflate(msg_parts[0].copy_out_string))
-          key = data.keys[0]
-          msg_parts.each{|part| part.close}
-          [key, {}, data[key]]
+          msg = msg_parts[0].copy_out_string
+          if msg.start_with?("igraci;") || msg.start_with?("listici;") ||
+              msg.start_with?("transakcije;")
+            action, headers, body = self.unpack_mongo_replication_message(msg)
+          else
+            action, headers, body = self.unpack_ponuda_service_message(msg)
+          end
         else
           msg_headers = msg_parts[-2].copy_out_string
           msg_body    = msg_parts[-1].copy_out_string
@@ -82,12 +86,47 @@ module Minus5
           body        = JSON.parse(body) if headers.content_type.include?("json")
           body        = body["body"] if headers.content_type.include?("packed")
           action      = headers.action
-          msg_parts.each{|part| part.close}
-          [action, headers, body]
+          if action == "get"
+            action = "ponuda"
+            headers.action = action
+            headers.message_type = "insert/delete"
+            headers.version = body["version"]
+          end
         end
+        msg_parts.each{|part| part.close}
+        [action, headers, body]
       end
 
       private
+
+      def self.unpack_mongo_replication_message(msg)
+        parts = msg.split("\n")
+        body = parts[1]
+        header_parts = parts[0].split(";")
+        headers = Hashie::Mash.new({})
+        action = header_parts[0]
+        %w(msg_type igrac_id doc_id action message_no).each_with_index do |key, idx|
+          headers[key] = header_parts[idx]
+        end
+        [action, headers, body]
+      end
+
+      def self.unpack_ponuda_service_message(msg)
+        data = JSON.parse(Zlib::Inflate.inflate(msg))
+        action = data.keys[0]
+        body = data[action]
+        headers  = Hashie::Mash.new({})
+        if action == "version"
+          headers.version = body
+          body = nil
+        end
+        if action == "get"
+          headers.message_type = "insert/delete"
+          headers.version = body["version"]
+        end
+        action = "ponuda"
+        [action, headers, body]
+      end
 
       def find_socket(socket_name)
         s = @sockets[socket_name]
