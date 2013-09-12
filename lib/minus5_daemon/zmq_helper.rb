@@ -51,21 +51,37 @@ module Minus5
         if action.to_s == "ponuda"
           action = "get"
         end
-        headers[:action]       = action
-        headers[:encoding]     = "deflate"
-        if body.kind_of?(String)
-          #ako je vec postavljen content_type prihvati taj
-          headers[:content_type] = "string" unless headers[:content_type]
-        elsif body.kind_of?(Array) || body.kind_of?(Hash)
-          headers[:content_type] = "json"
-        else
-          headers[:content_type] = "json/packed"
-          body = {:body => body}
+        headers[:action]   = action    if headers[:action].nil?
+        headers[:encoding] = "deflate" if headers[:encoding].nil?
+
+        unless body.nil?
+          if body.kind_of?(String)
+            headers[:content_type] = "string" unless headers[:content_type]
+          elsif body.kind_of?(Array) || body.kind_of?(Hash)
+            headers[:content_type] = "json"
+          else
+            headers[:content_type] = "json/packed"
+            body = {:body => body}
+          end
+          body        = JSON.generate(body) unless body.kind_of?(String)
+          msg_body    = if headers[:encoding] == "deflate"
+                          Zlib::Deflate.deflate(body)
+                        elsif headers[:encoding] == "gzip"
+                          gzip(body)
+                        else
+                          body
+                        end
         end
-        body        = JSON.generate(body) unless body.kind_of?(String)
-        msg_headers = JSON.generate(headers)
-        msg_body    = Zlib::Deflate.deflate(body)
+        msg_headers = JSON.generate(headers).gsub("\n", "")
         [msg_headers, msg_body]
+      end
+
+      def self.gzip(string)
+        wio = StringIO.new("w")
+        w_gz = Zlib::GzipWriter.new(wio)
+        w_gz.write(string)
+        w_gz.close
+        wio.string
       end
 
       def self.unpack_msg(msg_parts)
