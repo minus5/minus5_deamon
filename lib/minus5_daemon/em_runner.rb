@@ -5,7 +5,6 @@ module Minus5
 
       include SignalsHelper
       include LoggerHelper
-      include ZmqHelper
 
       def initialize(&block)
         @processes = []
@@ -17,7 +16,6 @@ module Minus5
 
         EM.epoll
         EM.run do
-          zmq_init
           @setup_block.call if @setup_block
           @run_block.call if @run_block
           @processes.each do |process|
