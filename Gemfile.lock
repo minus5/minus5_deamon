@@ -1,9 +1,8 @@
 PATH
   remote: .
   specs:
-    minus5_daemon (0.7.8)
-      em-zeromq (= 0.4.1)
-      eventmachine (= 1.0.0)
+    minus5_daemon (0.9.1)
+      eventmachine (= 1.0.8)
       hashie
       json
       micro-optparse
@@ -11,16 +10,9 @@ PATH
 GEM
   remote: http://rubygems.org/
   specs:
-    em-zeromq (0.4.1)
-      eventmachine (>= 1.0.0)
-      ffi (>= 1.0.0)
-      ffi-rzmq (= 0.9.7)
-    eventmachine (1.0.0)
-    ffi (1.9.0)
-    ffi-rzmq (0.9.7)
-      ffi
-    hashie (2.0.3)
-    json (1.8.0)
+    eventmachine (1.0.8)
+    hashie (2.0.5)
+    json (1.8.1)
     micro-optparse (1.1.5)
 
 PLATFORMS
@@ -28,3 +20,6 @@ PLATFORMS
 
 DEPENDENCIES
   minus5_daemon!
+
+BUNDLED WITH
+   1.10.6

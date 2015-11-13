@@ -9,7 +9,7 @@ GEMSPEC = Gem::Specification.new do |spec|
   spec.email   = 'ianic@minus5.hr'
 
   spec.add_dependency 'hashie'
-  spec.add_dependency 'eventmachine'  , '1.0.0'
+  spec.add_dependency 'eventmachine'  , '1.0.8'
   spec.add_dependency 'micro-optparse'
   spec.add_dependency 'json'
 

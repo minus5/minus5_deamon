@@ -18,10 +18,14 @@ task :deploy => [:gem] do
   file = "pkg/minus5_daemon-#{GEMSPEC.version}.gem"
   print "installing\n"
   `gem install #{file} --no-rdoc --no-ri`
-  print "copying to gems.minus5.hr\n"
-  `scp #{file} gems.minus5.hr:/var/www/apps/gems/gems`
+  # print "copying to gems.minus5.hr\n"
+  # `scp #{file} gems.minus5.hr:/var/www/apps/gems/gems`
+  # print "updating gem server index\n"
+  # `ssh ianic@gems.minus5.hr "cd /var/www/apps/gems; sudo gem generate_index"`
+  print "copying to korana.s.minus5.hr\n"
+  `scp #{gem_file} korana.s.minus5.hr:/var/www/gems.minus5.hr/gems`
   print "updating gem server index\n"
-  `ssh ianic@gems.minus5.hr "cd /var/www/apps/gems; sudo gem generate_index"`
+  `ssh korana.s.minus5.hr "cd /var/www/gems.minus5.hr; sudo gem generate_index"`
 end
 
 task :pero do
